@@ -1,0 +1,3 @@
+#!/home/generalroboticslab/Desktop/visual_worldmodeling/env-sim/bin/python
+from numba.pycc import main
+main()

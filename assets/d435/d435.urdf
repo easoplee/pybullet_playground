@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<robot name="myfirst">
+  <link name="base_link">
+    <visual>
+      <origin rpy="0.0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <!-- <box size="0.099 0.023 0.02005"/> -->
+        <mesh filename="package://d435/meshes/d435.dae"/>
+      </geometry>
+      <material name="sensor_d415_aluminum">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://d435/meshes/d435.dae"/>
+      </geometry>
+    </collision>
+    <inertial>
+        <!-- The following are not reliable values, and should not be used for modeling -->
+      <mass value="0.564" />
+      <origin xyz="0 0 0" />
+      <inertia ixx="0.003881243" ixy="0.0" ixz="0.0" iyy="0.000498940" iyz="0.0" izz="0.003879257" />
+    </inertial>
+  </link>
+</robot>
