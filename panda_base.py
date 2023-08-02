@@ -18,7 +18,7 @@ class PandaGripperD435(object):
         self.reset()
 
     def reset(self):
-        initial_pos = [-0., 0.4, 0, -1.2, 0, 2, 0.8]
+        initial_pos = [-0., 0.6, 0, -1.5, 0, 2, 0.8]
         for i in range(7):
             self.bullet_client.resetJointState(self.panda_id, i, initial_pos[i])
 

@@ -2,6 +2,10 @@ from panda_base import PandaGripperD435
 from pybullet_base import PyBulletBase
 import numpy as np
 import time
+import open3d as o3d
+import matplotlib.pyplot as plt
+import pybullet
+from PIL import Image
 
 class panda_camera(PyBulletBase):
     def __init__(self, gui_enabled):
@@ -30,7 +34,22 @@ class panda_camera(PyBulletBase):
         fov, aspect, nearplane, farplane = 60, 1.0, 0.01, 100
         projection_matrix = self.bullet_client.computeProjectionMatrixFOV(fov, aspect, nearplane, farplane)
         img = self.bullet_client.getCameraImage(256, 256, view_matrix, projection_matrix)
-        return img, self.cam_lookat
+        rgb, depth = img[2][:,:,:3], img[3]
+        
+        rgb_opengl = (np.reshape(img[2], (256,256, 4)))
+        rgbim = Image.fromarray(rgb_opengl)
+        rgbim_no_alpha = rgbim.convert('RGB')
+        rgbim_no_alpha.save('color.jpg')
+
+        far = 1000.
+        near = 0.01
+        depth_buffer_opengl = np.reshape(img[3], [256, 256])
+        depth_opengl = depth_buffer_opengl*(far-near)+near
+        depth = depth_opengl.astype(np.uint16)
+        new_p = Image.fromarray(depth)
+        
+        new_p.save('depth.png')
+        return rgb, depth, self.cam_lookat
     
     def move_wrist(self):
         curr_speed = 0.1
@@ -47,15 +66,27 @@ class panda_camera(PyBulletBase):
             
             theta = curr_pos + curr_speed
             joint_angle = theta  
-            
+
             # Set the joint position to move the wrist
             self.bullet_client.setJointMotorControl2(self.panda.panda_id, 4, self.bullet_client.POSITION_CONTROL, targetPosition=joint_angle)
 
 if __name__ == '__main__':
     panda = panda_camera(gui_enabled=True)
-    panda.move_wrist()
+    # panda.move_wrist()
     
     while True:
         panda.bullet_client.stepSimulation()
-        panda.panda_camera()
-        panda.panda.reset()
+        rgb, depth, _ = panda.panda_camera()
+        
+        rgb = np.array(rgb, dtype=np.float32)
+        depth = np.array(depth, dtype=np.float32)
+        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(o3d.geometry.Image(rgb), o3d.geometry.Image(depth))
+        width, height = 264, 264
+        intrinsic_matrix = np.array([[952.828,     0.,     646.699 ],[0.,      952.828,     342.637 ], [0.,         0.,         1.  ]]) 
+        pinholeCamera = o3d.camera.PinholeCameraIntrinsic(width, height, intrinsic_matrix[0][0], intrinsic_matrix[1][1], intrinsic_matrix[0][2], intrinsic_matrix[1][2])
+        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
+            rgbd,
+            pinholeCamera)
+        # o3d.visualization.draw_geometries([pcd])
+        # panda.panda.reset()
+        # time.sleep(10000)
