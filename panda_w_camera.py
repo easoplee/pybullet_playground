@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pybullet
 from PIL import Image
 import os
+import pyvista as pv
 
 class panda_camera(PyBulletBase):
     def __init__(self, gui_enabled):
@@ -28,6 +29,7 @@ class panda_camera(PyBulletBase):
         
         self.camera_data_idx = 0
         self.camera_capture_interval = 40
+        self.scene_pc = []
     
     def panda_camera(self, save_data=False): 
         # Center of mass position and orientation (of wrist camera index)
@@ -46,7 +48,8 @@ class panda_camera(PyBulletBase):
         projection_matrix = self.bullet_client.computeProjectionMatrixFOV(self.fov, self.aspect, self.nearplane, self.farplane)
         img = self.bullet_client.getCameraImage(self.img_size, self.img_size, view_matrix, projection_matrix)
 
-
+        # points is a 3D numpy array (n_points, 3) coordinates
+        pc = self.get_point_cloud(img[3], projection_matrix, view_matrix, self.camera_data_idx)
 
         if save_data:
             self._save_color_depth_transform(img, self.camera_data_idx)
@@ -77,6 +80,36 @@ class panda_camera(PyBulletBase):
         # save the camera transformation matrix
         transformation_matrix = self.panda.get_camera_transformation_matrix()
         np.save(f'data/transformation_matrix{idx}.npy', transformation_matrix)
+
+    def get_point_cloud(self, depth_img, projection_matrix, view_matrix, idx):
+        # create a 4x4 transform matrix that goes from pixel coordinates (and depth values) to world coordinates
+        proj_matrix = np.asarray(projection_matrix).reshape([4, 4], order="F")
+        view_matrix = np.asarray(view_matrix).reshape([4, 4], order="F")
+        tran_pix_world = np.linalg.inv(np.matmul(proj_matrix, view_matrix))
+
+        # create a grid with pixel coordinates and depth values
+        y, x = np.mgrid[-1:1:2 / self.img_size, -1:1:2 / self.img_size]
+        y *= -1.
+        x, y, z = x.reshape(-1), y.reshape(-1), depth_img.reshape(-1)
+        h = np.ones_like(z)
+
+        pixels = np.stack([x, y, z, h], axis=1)
+        # filter out "infinite" depths
+        pixels = pixels[z < 0.99]
+        pixels[:, 2] = 2 * pixels[:, 2] - 1
+
+        # turn pixels to world coordinates
+        points = np.matmul(tran_pix_world, pixels.T).T
+        points /= points[:, 3: 4]
+        points = points[:, :3]
+        if idx % self.camera_capture_interval == 0:
+            if idx == 0:
+                self.scene_pc = points
+            else:
+                self.scene_pc = np.concatenate((self.scene_pc, points), axis=0)
+            cloud = pv.PolyData(self.scene_pc)
+            cloud.plot()
+        return points
     
     def move_wrist(self):
         curr_speed = 0.1
