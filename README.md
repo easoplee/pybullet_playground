@@ -6,9 +6,12 @@ This repository is for pybullet development of visual-based manipulation tasks.
 - Cannot simply crop the top of the image to get rid of the EE being captured. This will interfere with the point cloud registration.
 
 ### TODO/ideas:
-- Scene probing at more locations
-- Better robot trajectory: to optimize the trajectory to collect the least amount of point clouds to cover the scene.
+- [x] Combine the partial scene mapping with self-model
+- [-] Scene probing at more locations
+- [x] Better robot trajectory: to optimize the trajectory to collect the least amount of point clouds to cover the scene.
     - Only record pc when "important" information pops up: how?
+
+## About
 
 ### Scene Probing
 
