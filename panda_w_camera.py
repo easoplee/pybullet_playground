@@ -112,6 +112,10 @@ class panda_camera(PyBulletBase):
         return points
     
     def move_wrist(self):
+        # wait for the scene to stablize
+        for _ in range(100):
+            self.bullet_client.stepSimulation()
+
         curr_speed = 0.1
         turn = 0
         while True:
@@ -140,6 +144,7 @@ class panda_camera(PyBulletBase):
 
 if __name__ == '__main__':
     panda = panda_camera(gui_enabled=True)
+    # wait until the environment is stable
     panda.move_wrist()
     
     while True:
