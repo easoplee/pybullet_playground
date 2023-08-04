@@ -33,6 +33,8 @@ class panda_camera(PyBulletBase):
 
         if not os.path.exists('data'):
             os.makedirs('data')
+
+        plotter = pv.Plotter()
     
     def panda_camera(self, save_data=False): 
         # Center of mass position and orientation (of wrist camera index)
@@ -144,6 +146,7 @@ class panda_camera(PyBulletBase):
             self.bullet_client.setJointMotorControl2(self.panda.panda_id, self.side_to_side_joint, self.bullet_client.POSITION_CONTROL, targetPosition=joint_angle)
 
 if __name__ == '__main__':
+    time.sleep(5)
     panda = panda_camera(gui_enabled=True)
     # wait until the environment is stable
     panda.move_wrist()
