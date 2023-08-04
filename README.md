@@ -2,9 +2,10 @@
 
 This repository is for pybullet development of visual-based manipulation tasks.
 
-### TODO:
+### TODO/ideas:
 - Scene probing at more locations
 - Better robot trajectory: to optimize the trajectory to collect the least amount of point clouds to cover the scene.
+    - Only record pc when "important" information pops up: how?
 
 ### Scene Probing
 
@@ -12,7 +13,7 @@ The panda arm moves its wrist joint to capture depth images from the scene and c
 
 ### panda_w_camera.py
 
-The new point clouds are added to the buffer as the camera moves. 
+The new point clouds are added to the buffer as the camera moves. The points are generated from only the depth images, not color images.
 
 This shows simple robot camera trajectory. Moves joint 4 by a certain degree every time step.
 <img src="gifs/probing_movement.gif" width="350" height="350"/>
