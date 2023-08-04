@@ -57,7 +57,6 @@ class PyBulletBase():
     def create_manipulation_scene(self):
         self.bullet_client.loadURDF("random_urdfs/002/002.urdf", [1, 0, 0.1])
         self.bullet_client.loadURDF("random_urdfs/001/001.urdf", [1.1, 0, 0.1])
-        # self.bullet_client.loadURDF("random_urdfs/003/003.urdf", [0.9, 0, 0.1])
         self.bullet_client.loadURDF("random_urdfs/004/004.urdf", [1.1, 0.1, 0.1])
         self.bullet_client.loadURDF("random_urdfs/005/005.urdf", [0.8, -0.1, 0.1])
         self.bullet_client.loadURDF("assets/shelf/shelf.urdf", [1, 0.5, 0.01], [0,0,1,1], useFixedBase=True, globalScaling=0.7)

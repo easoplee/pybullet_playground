@@ -31,7 +31,7 @@ class PandaCamera(PyBulletBase):
         self.camera_capture_interval = 20
         self.scene_pc = []
 
-        self.crop_size = 48
+        self.crop_size = 0
 
         if not os.path.exists('data'):
             os.makedirs('data')
@@ -126,9 +126,11 @@ class PandaCamera(PyBulletBase):
         for _ in range(100):
             self.bullet_client.stepSimulation()
 
-        vel = speed * direction
+        curr_speed = 0.3 * direction
+        turn = 0
+        initial_pos = self.panda.get_joint_state(self.side_to_side_joint)[0]
         while True:
-            # panda.panda.get_camera_transformation_matrix() # get the camera transformation matrix for open3d
+            panda.panda.get_camera_transformation_matrix()
             self.bullet_client.stepSimulation()
             # get RGB-D image and camera position/orientation relative to the world/robot base frame
             if self.camera_data_idx % self.camera_capture_interval == 0:
@@ -137,23 +139,38 @@ class PandaCamera(PyBulletBase):
                 save_data = False
             self.panda_camera(save_data=save_data)
             curr_pos = self.panda.get_joint_state(self.side_to_side_joint)[0]
-
-            # stop if the camera is looking too far up
-            if self.cam_lookat[2] > 0.75:
+            # to stablize the wrist from not chaning the direction
+            if self.cam_lookat[2] > 0.65 and turn == 0:
+                curr_speed *= -1  
+                turn += 1
+            if np.abs(initial_pos - curr_pos) < 0.01 and turn == 1:
                 break
             
-            theta = curr_pos + vel
-            joint_angle = theta  
+            theta = curr_pos + curr_speed
 
+            joint_angle = theta  
             # Set the joint position to move the wrist side to side
             self.bullet_client.setJointMotorControl2(self.panda.panda_id, self.side_to_side_joint, self.bullet_client.POSITION_CONTROL, targetPosition=joint_angle)
+
+
+    def move_hand_forward(self, dist_step):
+        curr_hand_pos = self.panda.get_hand_pose()[0]
+        new_hand_pos = curr_hand_pos + np.array([ dist_step, 0, 0])
+        while True:
+            self.panda.movej_newpos_ik(self.panda.hand_idx, new_hand_pos)
+            self.bullet_client.stepSimulation()
+            curr_hand_pos = self.panda.get_hand_pose()[0]
+            if np.abs(curr_hand_pos[1] - new_hand_pos[1]) < 0.01:
+                break
 
 if __name__ == '__main__':
     panda = PandaCamera(gui_enabled=True)
     panda.move_wrist()
-    
+    panda.move_wrist(direction=-1)
+    panda.move_hand_forward(0.15)
+    panda.move_wrist()
+    panda.move_wrist(direction=-1)
     while True:
-        panda.panda.reset()
         rgb, depth, _ = panda.panda_camera()
         panda.bullet_client.stepSimulation()
         

@@ -2,6 +2,9 @@
 
 This repository is for pybullet development of visual-based manipulation tasks.
 
+### Note to Self
+- Cannot simply crop the top of the image to get rid of the EE being captured. This will interfere with the point cloud registration.
+
 ### TODO/ideas:
 - Scene probing at more locations
 - Better robot trajectory: to optimize the trajectory to collect the least amount of point clouds to cover the scene.
@@ -25,7 +28,7 @@ Capture point cloud every 20 timesteps. This shows the progress of scene point c
 
 ### pointcloud_test.ipynb
 
-Test code to convert a pair of color+depth images into a single point cloud data using open3D. The camera to robot base transformation is currently not working.
+Test code to convert a pair of color+depth images into a single point cloud data using open3D. The camera to robot base transformation is currently not working. (stopped developing; chose to output pc directly from depth image and doing post-processing in pybullet)
 
 ## Installation
 

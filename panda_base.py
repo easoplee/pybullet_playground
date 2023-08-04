@@ -113,3 +113,10 @@ class PandaGripperD435(object):
             self.bullet_client.addUserDebugLine(base_to_camera_position, np.dot(base_to_camera_rot_matrix, np.array([0, 0, arrow_length])) + base_to_camera_position, [0, 0, 1], 5, 0)
 
         return transformation_matrix
+    
+    def movej_newpos_ik(self, idx, new_pos):
+        joint_pos = self.bullet_client.calculateInverseKinematics(self.panda_id, idx, new_pos)
+        # print(joint_pos)
+        # print(self._movable_joints)
+        for i in range(len(self._movable_joints)):
+            self.bullet_client.setJointMotorControl2(self.panda_id, i, self.bullet_client.POSITION_CONTROL, targetPosition=joint_pos[i])
