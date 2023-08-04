@@ -28,8 +28,11 @@ class panda_camera(PyBulletBase):
                                           [0.,         0.,         1.  ]]) 
         
         self.camera_data_idx = 0
-        self.camera_capture_interval = 40
+        self.camera_capture_interval = 20
         self.scene_pc = []
+
+        if not os.path.exists('data'):
+            os.makedirs('data')
     
     def panda_camera(self, save_data=False): 
         # Center of mass position and orientation (of wrist camera index)
@@ -51,8 +54,8 @@ class panda_camera(PyBulletBase):
         # points is a 3D numpy array (n_points, 3) coordinates
         pc = self.get_point_cloud(img[3], projection_matrix, view_matrix, self.camera_data_idx)
 
-        if save_data:
-            self._save_color_depth_transform(img, self.camera_data_idx)
+        # if save_data:
+        #     self._save_color_depth_transform(img, self.camera_data_idx)
         self.camera_data_idx += 1
 
         rgb = img[2][:, :, :3]
@@ -102,22 +105,23 @@ class panda_camera(PyBulletBase):
         points = np.matmul(tran_pix_world, pixels.T).T
         points /= points[:, 3: 4]
         points = points[:, :3]
+        
         if idx % self.camera_capture_interval == 0:
             if idx == 0:
                 self.scene_pc = points
             else:
                 self.scene_pc = np.concatenate((self.scene_pc, points), axis=0)
+            np.save('data/scene_pc.npy', self.scene_pc)
             cloud = pv.PolyData(self.scene_pc)
-            cloud.plot()
+            cloud.plot(eye_dome_lighting=True)
         return points
     
-    def move_wrist(self):
+    def move_wrist(self, direction=1):
         # wait for the scene to stablize
         for _ in range(100):
             self.bullet_client.stepSimulation()
 
-        curr_speed = 0.1
-        turn = 0
+        curr_speed = 0.5 * direction
         while True:
             panda.panda.get_camera_transformation_matrix()
             self.bullet_client.stepSimulation()
@@ -130,10 +134,7 @@ class panda_camera(PyBulletBase):
             curr_pos = self.panda.get_joint_state(self.side_to_side_joint)[0]
 
             # to stablize the wrist from not chaning the direction
-            if self.cam_lookat[2] > 0.65 and turn == 0:
-                curr_speed *= -1  
-                turn += 1
-            if self.cam_lookat[2] > 0.75 and turn == 1:
+            if self.cam_lookat[2] > 0.75:
                 break
             
             theta = curr_pos + curr_speed
@@ -147,22 +148,6 @@ if __name__ == '__main__':
     # wait until the environment is stable
     panda.move_wrist()
     
-    while True:
+    for _ in range(30):
         panda.bullet_client.stepSimulation()
-        # get RGB-D image and camera position/orientation relative to the world/robot base frame
-        rgb, depth, _ = panda.panda_camera()
-        
-        # get point cloud from RGB-D image
-        rgb = np.array(rgb, dtype=np.float32)
-        depth = np.array(depth, dtype=np.float32)
-        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(o3d.geometry.Image(rgb), o3d.geometry.Image(depth))
-        pinholeCamera = o3d.camera.PinholeCameraIntrinsic(panda.img_size, 
-                                                          panda.img_size, 
-                                                          panda.intrinsic_matrix[0][0], 
-                                                          panda.intrinsic_matrix[1][1], 
-                                                          panda.intrinsic_matrix[0][2], 
-                                                          panda.intrinsic_matrix[1][2])
-        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, pinholeCamera)
-        panda.panda.get_camera_transformation_matrix()
-        # o3d.visualization.draw_geometries([pcd])
         panda.panda.reset()
