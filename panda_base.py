@@ -1,5 +1,6 @@
 import pybullet
 import numpy as np
+import math
 
 class PandaGripperD435(object):
     def __init__(self, bullet_client):
@@ -10,7 +11,7 @@ class PandaGripperD435(object):
         self.hand_idx = 8
         self.writst_camera_idx = 12
     
-        start_pos = [0, 0, 0.001]
+        start_pos = [0, 0, 0]
         start_orientation = self.bullet_client.getQuaternionFromEuler([0, 0, 0])
         self.panda_id = self.bullet_client.loadURDF("assets/franka_panda/panda.urdf", start_pos, start_orientation, useFixedBase=True)
         self._movable_joints = self.get_movable_joints()
@@ -18,7 +19,7 @@ class PandaGripperD435(object):
         self.reset()
 
     def reset(self):
-        initial_pos = [-0., 0.6, 0, -1.5, 0, 2, 0.8]
+        initial_pos = [-0., 0.6, 0, -1.2, 0, 2, 0.8]
         for i in range(7):
             self.bullet_client.resetJointState(self.panda_id, i, initial_pos[i])
 
@@ -30,7 +31,7 @@ class PandaGripperD435(object):
             q_index = joint_info[3]
             if q_index > -1:
                 movable_joint_ids.append(idx)
-
+    
         return movable_joint_ids
 
     def get_joint_state(self, joint_id=None):
@@ -73,20 +74,41 @@ class PandaGripperD435(object):
 
         link_state = self.bullet_client.getLinkState(self.panda_id, link_id)
         pos = np.asarray(link_state[0])
-        ori = np.array([link_state[1][3], link_state[1][0], link_state[1][1], link_state[1][2]])  # hamilton convention
+        ori = np.array([link_state[5][0], link_state[5][1], link_state[5][2], link_state[5][3], ])  # hamilton convention
 
         return pos, ori
 
     def get_hand_pose(self):
         """
         :return: end-effector pose of this robot in the format (position,orientation)
-        .. note: orientation is a quaternion following Hamilton convention, i.e. (w, x, y, z)
+        .. note: orientation is a quaternion, i.e. (x, y, z, w)
         """
         return self.get_link_pose(link_id=self.hand_idx)
     
     def get_camera_pos(self):
         """
         :return: wrist mounted camera pose on this robot in the format (position,orientation)
-        .. note: orientation is a quaternion following Hamilton convention, i.e. (w, x, y, z)
+        .. note: orientation is a quaternion, i.e. (x, y, z, w)
         """
-        return self.get_camera_pos(link_id=self.writst_camera_idx)
+        return self.get_link_pose(link_id=self.writst_camera_idx)
+    
+    def get_camera_transformation_matrix(self):
+        """
+        :return: transformation matrix of the wrist mounted camera on this robot
+        """
+        transformation_matrix = np.zeros((4, 4))
+        transformation_matrix[:3, :3] = np.array(self.bullet_client.getMatrixFromQuaternion(self.get_camera_pos()[1])).reshape(3, 3)
+        transformation_matrix[:3, 3] = self.get_camera_pos()[0]
+        transformation_matrix[3, 3] = 1
+
+        # cam_pose = self.get_camera_pos()
+
+        # base_to_camera_position, base_orientation_quaternion = cam_pose[0], cam_pose[1]
+        # base_to_camera_rot_matrix = np.array(self.bullet_client.getMatrixFromQuaternion(base_orientation_quaternion)).reshape(3,3)
+
+        # arrow_length = 0.5
+        # self.bullet_client.addUserDebugLine(base_to_camera_position, np.dot(base_to_camera_rot_matrix, np.array([arrow_length, 0, 0])) + base_to_camera_position, [0, 1, 0], 5, 0)
+        # self.bullet_client.addUserDebugLine(base_to_camera_position, np.dot(base_to_camera_rot_matrix, np.array([0, arrow_length, 0])) + base_to_camera_position, [1, 0, 0], 5, 0)
+        # self.bullet_client.addUserDebugLine(base_to_camera_position, np.dot(base_to_camera_rot_matrix, np.array([0, 0, arrow_length])) + base_to_camera_position, [0, 0, 1], 5, 0)
+
+        return transformation_matrix
