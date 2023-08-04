@@ -92,7 +92,7 @@ class PandaGripperD435(object):
         """
         return self.get_link_pose(link_id=self.writst_camera_idx)
     
-    def get_camera_transformation_matrix(self):
+    def get_camera_transformation_matrix(self, visualize=False):
         """
         :return: transformation matrix of the wrist mounted camera on this robot
         """
@@ -101,14 +101,15 @@ class PandaGripperD435(object):
         transformation_matrix[:3, 3] = self.get_camera_pos()[0]
         transformation_matrix[3, 3] = 1
 
-        # cam_pose = self.get_camera_pos()
+        if visualize: # turns on the camera coordinate frame
+            cam_pose = self.get_camera_pos()
 
-        # base_to_camera_position, base_orientation_quaternion = cam_pose[0], cam_pose[1]
-        # base_to_camera_rot_matrix = np.array(self.bullet_client.getMatrixFromQuaternion(base_orientation_quaternion)).reshape(3,3)
+            base_to_camera_position, base_orientation_quaternion = cam_pose[0], cam_pose[1]
+            base_to_camera_rot_matrix = np.array(self.bullet_client.getMatrixFromQuaternion(base_orientation_quaternion)).reshape(3,3)
 
-        # arrow_length = 0.5
-        # self.bullet_client.addUserDebugLine(base_to_camera_position, np.dot(base_to_camera_rot_matrix, np.array([arrow_length, 0, 0])) + base_to_camera_position, [0, 1, 0], 5, 0)
-        # self.bullet_client.addUserDebugLine(base_to_camera_position, np.dot(base_to_camera_rot_matrix, np.array([0, arrow_length, 0])) + base_to_camera_position, [1, 0, 0], 5, 0)
-        # self.bullet_client.addUserDebugLine(base_to_camera_position, np.dot(base_to_camera_rot_matrix, np.array([0, 0, arrow_length])) + base_to_camera_position, [0, 0, 1], 5, 0)
+            arrow_length = 0.5
+            self.bullet_client.addUserDebugLine(base_to_camera_position, np.dot(base_to_camera_rot_matrix, np.array([arrow_length, 0, 0])) + base_to_camera_position, [0, 1, 0], 5, 0)
+            self.bullet_client.addUserDebugLine(base_to_camera_position, np.dot(base_to_camera_rot_matrix, np.array([0, arrow_length, 0])) + base_to_camera_position, [1, 0, 0], 5, 0)
+            self.bullet_client.addUserDebugLine(base_to_camera_position, np.dot(base_to_camera_rot_matrix, np.array([0, 0, arrow_length])) + base_to_camera_position, [0, 0, 1], 5, 0)
 
         return transformation_matrix

@@ -9,7 +9,7 @@ from PIL import Image
 import os
 import pyvista as pv
 
-class panda_camera(PyBulletBase):
+class PandaCamera(PyBulletBase):
     def __init__(self, gui_enabled):
         super().__init__(gui_enabled)
         self.initialize_sim()
@@ -31,10 +31,10 @@ class panda_camera(PyBulletBase):
         self.camera_capture_interval = 20
         self.scene_pc = []
 
+        self.crop_size = 48
+
         if not os.path.exists('data'):
             os.makedirs('data')
-
-        plotter = pv.Plotter()
     
     def panda_camera(self, save_data=False): 
         # Center of mass position and orientation (of wrist camera index)
@@ -54,16 +54,18 @@ class panda_camera(PyBulletBase):
         img = self.bullet_client.getCameraImage(self.img_size, self.img_size, view_matrix, projection_matrix)
 
         # points is a 3D numpy array (n_points, 3) coordinates
-        pc = self.get_point_cloud(img[3], projection_matrix, view_matrix, self.camera_data_idx)
+        depth_img = img[3]
+        # crop the top part of the depth image to get rid of showing the EE 
+        depth_img = depth_img[self.crop_size:, self.crop_size:]
+        pc = self.get_point_cloud(depth_img, projection_matrix, view_matrix, self.camera_data_idx)
 
-        # if save_data:
-        #     self._save_color_depth_transform(img, self.camera_data_idx)
+        if save_data:
+            self._save_color_depth_transform(img, self.camera_data_idx)
         self.camera_data_idx += 1
 
         rgb = img[2][:, :, :3]
-        depth = img[3]
 
-        return rgb, depth, self.cam_lookat
+        return rgb, depth_img, self.cam_lookat
     
     def _save_color_depth_transform(self, img, idx):
         # process color and depth images
@@ -93,7 +95,8 @@ class panda_camera(PyBulletBase):
         tran_pix_world = np.linalg.inv(np.matmul(proj_matrix, view_matrix))
 
         # create a grid with pixel coordinates and depth values
-        y, x = np.mgrid[-1:1:2 / self.img_size, -1:1:2 / self.img_size]
+        crop_img_size = self.img_size - self.crop_size
+        y, x = np.mgrid[-1:1:2 / crop_img_size, -1:1:2 / crop_img_size]
         y *= -1.
         x, y, z = x.reshape(-1), y.reshape(-1), depth_img.reshape(-1)
         h = np.ones_like(z)
@@ -118,39 +121,39 @@ class panda_camera(PyBulletBase):
             cloud.plot(eye_dome_lighting=True)
         return points
     
-    def move_wrist(self, direction=1):
+    def move_wrist(self, direction=1, speed = 0.5):
         # wait for the scene to stablize
         for _ in range(100):
             self.bullet_client.stepSimulation()
 
-        curr_speed = 0.5 * direction
+        vel = speed * direction
         while True:
-            panda.panda.get_camera_transformation_matrix()
+            # panda.panda.get_camera_transformation_matrix() # get the camera transformation matrix for open3d
             self.bullet_client.stepSimulation()
             # get RGB-D image and camera position/orientation relative to the world/robot base frame
             if self.camera_data_idx % self.camera_capture_interval == 0:
-                save_data = True
+                save_data = False
             else:
                 save_data = False
             self.panda_camera(save_data=save_data)
             curr_pos = self.panda.get_joint_state(self.side_to_side_joint)[0]
 
-            # to stablize the wrist from not chaning the direction
+            # stop if the camera is looking too far up
             if self.cam_lookat[2] > 0.75:
                 break
             
-            theta = curr_pos + curr_speed
+            theta = curr_pos + vel
             joint_angle = theta  
 
             # Set the joint position to move the wrist side to side
             self.bullet_client.setJointMotorControl2(self.panda.panda_id, self.side_to_side_joint, self.bullet_client.POSITION_CONTROL, targetPosition=joint_angle)
 
 if __name__ == '__main__':
-    time.sleep(5)
-    panda = panda_camera(gui_enabled=True)
-    # wait until the environment is stable
+    panda = PandaCamera(gui_enabled=True)
     panda.move_wrist()
     
-    for _ in range(30):
-        panda.bullet_client.stepSimulation()
+    while True:
         panda.panda.reset()
+        rgb, depth, _ = panda.panda_camera()
+        panda.bullet_client.stepSimulation()
+        
