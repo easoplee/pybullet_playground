@@ -25,3 +25,15 @@ Capture point cloud every 20 timesteps. This shows the progress of scene point c
 ### pointcloud_test.ipynb
 
 Test code to convert a pair of color+depth images into a single point cloud data using open3D. The camera to robot base transformation is currently not working.
+
+## Installation
+
+Create a python3 virtual environment and install the dependencies.
+
+Note that the example command below runs on a machine where python3 is located at ```/usr/bin/python3.8```. Please change this accordingly based on the specific python3 path on your machine.
+
+```
+virtualenv -p /usr/bin/python3.8 venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
