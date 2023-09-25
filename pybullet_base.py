@@ -9,10 +9,10 @@ class PyBulletBase():
         self.gui_enabled = gui_enabled
 
         # Change the camera view
-        self.camera_distance = 2.0
-        self.camera_yaw = 0
+        self.camera_distance = 1.7
+        self.camera_yaw = 40
         self.camera_pitch = -20
-        self.camera_target_position = [0.5, 0, 0.15] 
+        self.camera_target_position = [0.5, 0.3, 0.15] 
 
         # connect to pybullet
         self.connect_to_pybullet()
@@ -33,6 +33,15 @@ class PyBulletBase():
 
         self.create_black_mat()
         self.reset_camera_visualizer()
+
+        marker_radius = 0.5
+        marker_color = [1, 0, 0, 1]  # RGBA (Red, Green, Blue, Alpha), here it is red
+        final_destination = (0.599878261570502, -0.00018517092071656057, 0.12712722444553676)
+
+        self.bullet_client.createVisualShape(shapeType=p.GEOM_SPHERE,
+                            radius=marker_radius,
+                            rgbaColor=marker_color,
+                            visualFramePosition=final_destination)
         
     def create_black_mat(self):
         region_half_extents = [0.6, 0.6, 0.01]  # x, y, and z half extents of the region
@@ -55,8 +64,8 @@ class PyBulletBase():
                                                       self.camera_target_position)
     
     def create_manipulation_scene(self):
-        self.bullet_client.loadURDF("random_urdfs/002/002.urdf", [1, 0, 0.1])
+        self.object = self.bullet_client.loadURDF("random_urdfs/002/002.urdf", [0.6, 0, 0.1])
         self.bullet_client.loadURDF("random_urdfs/001/001.urdf", [1.1, 0, 0.1])
         self.bullet_client.loadURDF("random_urdfs/004/004.urdf", [1.1, 0.1, 0.1])
         self.bullet_client.loadURDF("random_urdfs/005/005.urdf", [0.8, -0.1, 0.1])
-        self.bullet_client.loadURDF("assets/shelf/shelf.urdf", [1, 0.5, 0.01], [0,0,1,1], useFixedBase=True, globalScaling=0.7)
+        self.bullet_client.loadURDF("assets/shelf/shelf.urdf", [0.75, 0.5, 0.01], [0,0,1,1], useFixedBase=True, globalScaling=0.7)

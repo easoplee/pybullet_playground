@@ -1,6 +1,7 @@
 import pybullet
 import numpy as np
 import math
+import cv2
 
 class PandaGripperD435(object):
     def __init__(self, bullet_client):
@@ -13,8 +14,10 @@ class PandaGripperD435(object):
     
         start_pos = [0, 0, 0]
         start_orientation = self.bullet_client.getQuaternionFromEuler([0, 0, 0])
+        
         self.panda_id = self.bullet_client.loadURDF("assets/franka_panda/panda.urdf", start_pos, start_orientation, useFixedBase=True)
         self._movable_joints = self.get_movable_joints()
+        print(self._movable_joints)
 
         self.reset()
 
@@ -22,6 +25,8 @@ class PandaGripperD435(object):
         initial_pos = [-0., 0.6, 0, -1.2, 0, 2, 0.8]
         for i in range(7):
             self.bullet_client.resetJointState(self.panda_id, i, initial_pos[i])
+        for each in [9, 10]:
+            self.bullet_client.resetJointState(self.panda_id, each, 0.04)
 
     # returns id's of all the movable robot joints
     def get_movable_joints(self):
@@ -120,3 +125,28 @@ class PandaGripperD435(object):
         # print(self._movable_joints)
         for i in range(len(self._movable_joints)):
             self.bullet_client.setJointMotorControl2(self.panda_id, i, self.bullet_client.POSITION_CONTROL, targetPosition=joint_pos[i])
+
+    def close_gripper(self, frame_idx):
+        # close the gripper
+        for _ in range(50):
+            self.bullet_client.setJointMotorControl2(self.panda_id, 9, self.bullet_client.POSITION_CONTROL, targetPosition=-0.03)
+            self.bullet_client.setJointMotorControl2(self.panda_id, 10, self.bullet_client.POSITION_CONTROL, targetPosition=-0.03)
+            width, height, rgbImg, depthImg, segImg = self.bullet_client.getCameraImage(width=640, height=480) 
+            frame = cv2.cvtColor(np.array(rgbImg), cv2.COLOR_RGB2BGR)
+            cv2.imwrite(f'frames/frame_{frame_idx:04d}.png', frame)
+            frame_idx += 1
+            self.bullet_client.stepSimulation()
+
+        return frame_idx
+
+    def open_gripper(self, frame_idx):
+        # open the gripper
+        for _ in range(30):
+            self.bullet_client.setJointMotorControl2(self.panda_id, 9, self.bullet_client.POSITION_CONTROL, targetPosition=0.04)
+            self.bullet_client.setJointMotorControl2(self.panda_id, 10, self.bullet_client.POSITION_CONTROL, targetPosition=0.04)
+            width, height, rgbImg, depthImg, segImg = self.bullet_client.getCameraImage(width=640, height=480) 
+            frame = cv2.cvtColor(np.array(rgbImg), cv2.COLOR_RGB2BGR)
+            cv2.imwrite(f'frames/frame_{frame_idx:04d}.png', frame)
+            frame_idx += 1
+            self.bullet_client.stepSimulation()
+        return frame_idx
