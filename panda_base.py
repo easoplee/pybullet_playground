@@ -18,6 +18,31 @@ class PandaGripperD435(object):
         self.panda_id = self.bullet_client.loadURDF("assets/franka_panda/panda.urdf", start_pos, start_orientation, useFixedBase=True)
         self._movable_joints = self.get_movable_joints()
         print(self._movable_joints)
+        self.item = 4
+
+        # Define the camera's eye position (x, y, z)
+        eye_pos = [0.1, -0.15, 0.4]  # Example position, you can modify this to change the distance and angle
+        target_pos = [1, 0, 0.15]  # Looking at the origin (0, 0, 0)
+        up_vector = [0, 0, 1]  # Z-axis is up
+
+        self.viewMatrix = pybullet.computeViewMatrix(
+            cameraEyePosition=eye_pos,
+            cameraTargetPosition=target_pos,
+            cameraUpVector=up_vector
+        )
+
+        # Define the projection matrix (for the field of view of the camera)
+        fov = 60  # Field of view, in degrees
+        aspect = 640 / 480  # Aspect ratio
+        near = 0.02  # Near clipping plane
+        far = 100  # Far clipping plane
+
+        self.projectionMatrix = pybullet.computeProjectionMatrixFOV(
+            fov=fov,
+            aspect=aspect,
+            nearVal=near,
+            farVal=far
+        )
 
         self.reset()
 
@@ -121,32 +146,38 @@ class PandaGripperD435(object):
     
     def movej_newpos_ik(self, idx, new_pos):
         joint_pos = self.bullet_client.calculateInverseKinematics(self.panda_id, idx, new_pos)
-        # print(joint_pos)
-        # print(self._movable_joints)
         for i in range(len(self._movable_joints)):
             self.bullet_client.setJointMotorControl2(self.panda_id, i, self.bullet_client.POSITION_CONTROL, targetPosition=joint_pos[i])
 
-    def close_gripper(self, frame_idx):
+    def close_gripper(self):
         # close the gripper
-        for _ in range(50):
-            self.bullet_client.setJointMotorControl2(self.panda_id, 9, self.bullet_client.POSITION_CONTROL, targetPosition=-0.03)
-            self.bullet_client.setJointMotorControl2(self.panda_id, 10, self.bullet_client.POSITION_CONTROL, targetPosition=-0.03)
-            width, height, rgbImg, depthImg, segImg = self.bullet_client.getCameraImage(width=640, height=480) 
-            frame = cv2.cvtColor(np.array(rgbImg), cv2.COLOR_RGB2BGR)
-            cv2.imwrite(f'frames/frame_{frame_idx:04d}.png', frame)
-            frame_idx += 1
-            self.bullet_client.stepSimulation()
+        for _ in range(3):
+            self.bullet_client.setJointMotorControl2(self.panda_id, 9, self.bullet_client.POSITION_CONTROL, targetPosition=-0.1)
+            self.bullet_client.setJointMotorControl2(self.panda_id, 10, self.bullet_client.POSITION_CONTROL, targetPosition=-0.1)
+            # width, height, rgbImg, depthImg, segImg = self.bullet_client.getCameraImage(640, 480, self.viewMatrix, self.projectionMatrix) 
+            # frame = cv2.cvtColor(np.array(rgbImg), cv2.COLOR_RGB2BGR)
+            # frame_mask = np.zeros_like(segImg, dtype=np.uint8)  # Create an empty black image with the same shape as segImg
 
-        return frame_idx
+            # # Set pixels with value 2 to white (255)
+            # frame_mask[segImg == self.item] = 255
+            # cv2.imwrite(f'frames/frame_{frame_idx:04d}.png', frame)
+            # cv2.imwrite(f'frames_mask/frame_{frame_idx:04d}.png', frame_mask)
+            
+            self.bullet_client.stepSimulation()
 
     def open_gripper(self, frame_idx):
         # open the gripper
         for _ in range(30):
             self.bullet_client.setJointMotorControl2(self.panda_id, 9, self.bullet_client.POSITION_CONTROL, targetPosition=0.04)
             self.bullet_client.setJointMotorControl2(self.panda_id, 10, self.bullet_client.POSITION_CONTROL, targetPosition=0.04)
-            width, height, rgbImg, depthImg, segImg = self.bullet_client.getCameraImage(width=640, height=480) 
+            width, height, rgbImg, depthImg, segImg = self.bullet_client.getCameraImage(640, 480, self.viewMatrix, self.projectionMatrix) 
             frame = cv2.cvtColor(np.array(rgbImg), cv2.COLOR_RGB2BGR)
             cv2.imwrite(f'frames/frame_{frame_idx:04d}.png', frame)
+            frame_mask = np.zeros_like(segImg, dtype=np.uint8)  # Create an empty black image with the same shape as segImg
+
+            # Set pixels with value 2 to white (255)
+            frame_mask[segImg == self.item] = 255
+            cv2.imwrite(f'frames_mask/frame_{frame_idx:04d}.png', frame_mask)
             frame_idx += 1
             self.bullet_client.stepSimulation()
         return frame_idx

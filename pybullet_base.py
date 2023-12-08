@@ -17,6 +17,7 @@ class PyBulletBase():
         # connect to pybullet
         self.connect_to_pybullet()
 
+
     def connect_to_pybullet(self):
         if self.gui_enabled:
             self.bullet_client = bc.BulletClient(connection_mode=p.GUI)
@@ -64,8 +65,13 @@ class PyBulletBase():
                                                       self.camera_target_position)
     
     def create_manipulation_scene(self):
-        self.object = self.bullet_client.loadURDF("random_urdfs/002/002.urdf", [0.6, 0, 0.1])
-        self.bullet_client.loadURDF("random_urdfs/001/001.urdf", [1.1, 0, 0.1])
-        self.bullet_client.loadURDF("random_urdfs/004/004.urdf", [1.1, 0.1, 0.1])
-        self.bullet_client.loadURDF("random_urdfs/005/005.urdf", [0.8, -0.1, 0.1])
+        # self.object = self.bullet_client.loadURDF("random_urdfs/002/002.urdf", [1, 0, 0.1])
+        self.object = self.bullet_client.loadURDF("cube.urdf", [0.64, 0, 0.1], globalScaling=0.05)
+        # self.bullet_client.loadURDF("random_urdfs/001/001.urdf", [1.1, 0, 0.1])
+        # self.bullet_client.loadURDF("random_urdfs/004/004.urdf", [1.1, 0.1, 0.1])
+        # self.bullet_client.loadURDF("random_urdfs/005/005.urdf", [0.8, -0.1, 0.1])
         self.bullet_client.loadURDF("assets/shelf/shelf.urdf", [0.75, 0.5, 0.01], [0,0,1,1], useFixedBase=True, globalScaling=0.7)
+    
+    def create_manipulation_scene2(self):
+        # add drawer
+        pass
