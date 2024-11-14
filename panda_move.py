@@ -6,7 +6,7 @@ import pybullet_data
 pybullet.connect(pybullet.GUI)
 
 # Load the Panda robot URDF
-panda = pybullet.loadURDF("/Users/easoplee/Desktop/pybullet_playground/assets/franka_panda/panda.urdf", useFixedBase=True)
+panda = pybullet.loadURDF("assets/franka_panda/panda.urdf", useFixedBase=True)
 
 # Set gravity
 pybullet.setGravity(0, 0, -9.81)

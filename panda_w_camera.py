@@ -72,6 +72,10 @@ class PandaCamera(PyBulletBase):
         )
 
         self.frame_idx = 0
+        
+        # create frames directory
+        if not os.path.exists('frames'):
+            os.makedirs('frames')
     
     def panda_camera(self, save_data=False): 
         # Center of mass position and orientation (of wrist camera index)
@@ -96,14 +100,14 @@ class PandaCamera(PyBulletBase):
         # depth_img = depth_img[self.crop_size:, self.crop_size:]
         # # pc = self.get_point_cloud(depth_img, projection_matrix, view_matrix, self.camera_data_idx)
 
-        frame = cv2.cvtColor(np.array(rgbImg), cv2.COLOR_RGB2BGR)
-        cv2.imwrite(f'frames/frame_{self.frame_idx:04d}.png', frame)
-        frame_mask = np.zeros_like(segImg, dtype=np.uint8)  # Create an empty black image with the same shape as segImg
+        # frame = cv2.cvtColor(np.array(rgbImg), cv2.COLOR_RGB2BGR)
+        # cv2.imwrite(f"frames/frame_{self.frame_idx:04d}.png", frame)
+        # frame_mask = np.zeros_like(segImg, dtype=np.uint8)  # Create an empty black image with the same shape as segImg
 
-        # Set pixels with value 2 to white (255)
-        frame_mask[segImg == self.item] = 255
-        cv2.imwrite(f'frames_mask/frame_{self.frame_idx:04d}.png', frame_mask)
-        self.frame_idx += 1
+        # # Set pixels with value 2 to white (255)
+        # frame_mask[segImg == self.item] = 255
+        # cv2.imwrite(f'frames_mask/frame_{self.frame_idx:04d}.png', frame_mask)
+        # self.frame_idx += 1
 
         # if save_data:
         #     self._save_color_depth_transform(img, self.camera_data_idx)
@@ -179,7 +183,7 @@ class PandaCamera(PyBulletBase):
     
         return movable_joint_ids
 
-    def move_wrist(self, direction=1, speed = 0.5, camera=True):
+    def move_wrist(self, direction=1, speed = 0.5, camera=False):
         # wait for the scene to stablize
         for _ in range(100):
             self.bullet_client.stepSimulation()
@@ -331,7 +335,7 @@ class PandaCamera(PyBulletBase):
         for keypoint in keypoints:
             self.movej_newpos_ik(self.panda.hand_idx, keypoint)
             self.bullet_client.stepSimulation()
-            # time.sleep(0.1)
+
 
         # rotate the wrist
         curr_speed = 2
@@ -362,11 +366,3 @@ if __name__ == '__main__':
     panda = PandaCamera(gui_enabled=True)
     # panda.expert_demo_push()
     panda.expert_demo_pick_and_place()
-    # panda.move_wrist(direction=-1)
-    # panda.move_hand_forward(0.15)
-    # panda.move_wrist()
-    # panda.move_wrist(direction=-1)
-    # while True:
-    #     # rgb, depth, _ = panda.panda_camera()
-    #     panda.bullet_client.stepSimulation()
-    #     # time.sleep(0.01)
